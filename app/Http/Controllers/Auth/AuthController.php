@@ -1,0 +1,114 @@
+<?php
+namespace App\Http\Controllers\Auth;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\User;
+use Socialite;
+//use Laravel\Socialite\Facades\Socialite;
+use Auth;
+
+class AuthController extends Controller
+{
+    //
+    
+    public function redirectToFacebook()
+{
+    return Socialite::with('facebook')->redirect();
+}
+public function generateRandomString($length = 10) {
+           $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+           $charactersLength = strlen($characters);
+           $randomString = '';
+           for ($i = 0; $i < $length; $i++) {
+               $randomString .= $characters[rand(0, $charactersLength - 1)];
+           }
+           return $randomString;
+       }
+public function getFacebookCallback()
+{
+    $data = Socialite::with('facebook')->user();
+    $user = User::where('email', $data->email)->first();
+    
+    if(!is_null($user)) {
+        Auth::login($user);
+        $user->first_name = $data->user['name'];
+        $user->facebook_id = $data->id;
+        $user->save();
+        echo($data->email);
+    } else {
+        $user = User::where('provider_id', $data->id)->first();
+        if(is_null($user)){
+            // Create a new user
+            $user = new User();
+            $user->first_name = $data->user['name'];
+            $user->email = $data->email;
+            $user->facebook_id = $data->id;
+            $user->save();
+        }
+// we will need to create a default password for every user that uses social authentication.
+        Auth::login($user);
+    }
+    return redirect('/home')->with('notification', 'Successfully logged in!');
+}
+public function redirectToGoogle()
+{
+    return Socialite::with('google')->redirect();
+}
+public function getGoogleCallback()
+{
+    $data = Socialite::with('google')->user();
+    $user = User::where('email', $data->email)->first();
+   
+    if(!is_null($user)) {
+        Auth::login($user);
+        $user->email = $data->email;
+        $user->google_id = $data->id;
+        $user->save();
+        echo $data->getEmail();
+    } else {
+        $user = User::where('provider_id', $data->id)->first();
+        if(is_null($user)){
+            // Create a new user
+            echo $data->getName();
+            $user = new User();
+            $user->first_name = $data->getName();
+            $user->email = $data->getEmail();
+            $user->google_id = $data->id;
+            $user->save();
+        }
+        Auth::login($user);
+    }
+    return redirect('/home')->with('notification', 'Successfully logged in!');
+}
+public function redirectToTwitter()
+{
+    return Socialite::with('twitter')->redirect();
+}
+public function getTwitterCallback()
+{
+    $data = Socialite::with('twitter')->user();
+    $user = User::where('email', $data->email)->first();
+   
+    if(!is_null($user)) {
+        Auth::login($user);
+        $user->email = $data->email;
+        $user->provider_id = $data->id;
+        $user->save();
+        
+    } else {
+        $user = User::where('provider_id', $data->id)->first();
+        if(is_null($user)){
+            // Create a new user
+            echo $data->getEmail();
+            $user = new User();
+             $user->name = $data->getName();
+            $user->email = $data->getEmail();
+            $user->provider_id = $data->id;
+            $user->save();
+        }
+        Auth::login($user);
+    }
+    return redirect('/home')->with('notification', 'Successfully logged in!');
+}
+}
